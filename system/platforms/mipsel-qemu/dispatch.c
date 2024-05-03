@@ -11,6 +11,8 @@
 #include "pic8259.h"
 #include <stdio.h>
 
+extern uint32_t clkcountermsec;
+
 char *interrupts[] = {
     "Software interrupt request 0",
     "Software interrupt request 1",
@@ -45,8 +47,11 @@ char *interrupts[] = {
  * @param frame pointer to interrupt frame with saved status
  *
  */
+
 void dispatch(long cause, long *frame)
 {
+
+    // dispatch.c is also called every time the clock is interrupted.
     long irqcode = 0, irqnum = -1;
     irqmask im;
     void (*handler) (void);

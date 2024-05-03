@@ -1,1 +1,1 @@
-#define VERSION "(Embedded Xinu) (mipsel-qemu) #8 (odesai@lcs-vc-bkim01-02.ad.syr.edu) Mon 13 Nov 2023 06:20:18 PM EST"
+#define VERSION "(Embedded Xinu) (mipsel-qemu) #404 (altafuturis@altafuturis) Wednesday 13 December 2023 09:40:26 PM EST"

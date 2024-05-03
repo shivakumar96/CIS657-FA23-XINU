@@ -6,6 +6,9 @@
 #include <platform.h>
 #include <string.h>
 #include <thread.h>
+#include <stdint.h>
+
+extern volatile uint32_t clkcountermsec;
 
 static int thrnew(void);
 
@@ -68,7 +71,9 @@ tid_typ create(void *procaddr, uint ssize, int priority,
     thrptr = &thrtab[tid];
 
     thrptr->state = THRSUSP;
-    thrptr->prio = priority;
+    // UPDATE: Settting priority of threads to 1 by default.
+    thrptr->prio = 1;
+    //thrptr->prio = priority;
     thrptr->stkbase = saddr;
     thrptr->stklen = ssize;
     strlcpy(thrptr->name, name, TNMLEN);
@@ -76,6 +81,14 @@ tid_typ create(void *procaddr, uint ssize, int priority,
     thrptr->hasmsg = FALSE;
     thrptr->memlist.next = NULL;
     thrptr->memlist.length = 0;
+
+    // Initialize the new thrent attributes.
+    thrptr->thrtotcpu = 0;
+    thrptr->thrtotresp = 0;
+    thrptr->thrtotready = 0;
+
+    // Set the value to the current clock.
+     thrptr->thrreadystart = -1;
 
     /* Set up default file descriptors.  */
     thrptr->fdesc[0] = CONSOLE; /* stdin  is console */

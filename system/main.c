@@ -13,6 +13,16 @@
 
 static void print_os_info(void);
 
+/* Start of kernel in memory (provided by linker)  */
+extern void _start(void);
+extern volatile uint32_t clkcountermsec;
+
+void cpuproc(void);
+void parasite(void);
+void procio(void);
+
+tid_typ our_shell_id ;
+
 /**
  * Main thread.  You can modify this routine to customize what Embedded Xinu
  * does when it starts up.  The default is designed to do something reasonable
@@ -20,117 +30,139 @@ static void print_os_info(void);
  */
 thread main(void)
 {
-#if HAVE_SHELL
-    int shelldevs[4][3];
-    uint nshells = 0;
-#endif
 
-    /* Print information about the operating system  */
-    print_os_info();
+    //chprio(0, 3);
+    //chprio(1, 3);
 
-    /* Open all ethernet devices */
-#if NETHER
-    {
-        uint i;
+    kprintf("About to launch worker threads... %d\n",gettid());
+    chprio(0, 0);
 
-        for (i = 0; i < NETHER; i++)
-        {
-            if (SYSERR == open(ethertab[i].dev->num))
-            {
-                kprintf("WARNING: Failed to open %s\r\n",
-                        ethertab[i].dev->name);
-            }
-        }
-    }
-#endif /* NETHER */
+    /**
+     * Benchmark testing for Xinu
+     */
 
-    /* Set up the first TTY (CONSOLE)  */
-#if defined(CONSOLE) && defined(SERIAL0)
-    if (OK == open(CONSOLE, SERIAL0))
-    {
-  #if HAVE_SHELL
-        shelldevs[nshells][0] = CONSOLE;
-        shelldevs[nshells][1] = CONSOLE;
-        shelldevs[nshells][2] = CONSOLE;
-        nshells++;
-  #endif
-    }
-    else
-    {
-        kprintf("WARNING: Can't open CONSOLE over SERIAL0\r\n");
-    }
-#elif defined(SERIAL0)
-  #warning "No TTY for SERIAL0"
-#endif
+    int selectBenchmarkTest =3 ;
 
-    /* Set up the second TTY (TTY1) if possible  */
-#if defined(TTY1)
-  #if defined(KBDMON0)
-    /* Associate TTY1 with keyboard and use framebuffer output  */
-    if (OK == open(TTY1, KBDMON0))
-    {
-    #if HAVE_SHELL
-        shelldevs[nshells][0] = TTY1;
-        shelldevs[nshells][1] = TTY1;
-        shelldevs[nshells][2] = TTY1;
-        nshells++;
-    #endif
-    }
-    else
-    {
-        kprintf("WARNING: Can't open TTY1 over KBDMON0\r\n");
-    }
-  #elif defined(SERIAL1)
-    /* Associate TTY1 with SERIAL1  */
-    if (OK == open(TTY1, SERIAL1))
-    {
-    #if HAVE_SHELL
-        shelldevs[nshells][0] = TTY1;
-        shelldevs[nshells][1] = TTY1;
-        shelldevs[nshells][2] = TTY1;
-        nshells++;
-    #endif
-    }
-    else
-    {
-        kprintf("WARNING: Can't open TTY1 over SERIAL1\r\n");
-    }
-  #endif /* SERIAL1 */
-#else /* TTY1 */
-  #if defined(KBDMON0)
-    #warning "No TTY for KBDMON0"
-  #elif defined(SERIAL1)
-    #warning "No TTY for SERIAL1"
-  #endif
-#endif /* TTY1 */
+    // Variables used for benchmark testing
+    tid_typ cpuProc1, cpuProc2, cpuProc3, cpuProc4; //stores cpurpoc process pids
+    tid_typ ioPoc1, ioPoc2, ioPoc3, ioPoc4; //stores procio ids process pids
+    tid_typ parasite1 ; //stores parasite process pid
 
-    /* Start shells  */
-#if HAVE_SHELL
-    {
-        uint i;
-        char name[16];
+    switch (selectBenchmarkTest) {
+        /**
+         *  Benchmark A:
+         */
+        case 1:
 
-        for (i = 0; i < nshells; i++)
-        {
-            sprintf(name, "SHELL%u", i);
-            if (SYSERR == ready(create
-                                (shell, INITSTK, INITPRIO, name, 3,
-                                 shelldevs[i][0],
-                                 shelldevs[i][1],
-                                 shelldevs[i][2]),
-                                RESCHED_NO))
-            {
-                kprintf("WARNING: Failed to create %s", name);
-            }
-        }
+            kprintf("Executing Benchmark-A : 4 CPU process\n\n");
+
+            // Creating CPU intensive process
+            cpuProc1 = create(cpuproc, 1024, 1, "CPU-Proc-A", 0);
+            cpuProc2 = create(cpuproc, 1024, 1, "CPU-Proc-B", 0);
+            cpuProc3 = create(cpuproc, 1024, 1, "CPU-Proc-C", 0);
+            cpuProc4 = create(cpuproc, 1024, 1, "CPU-Proc-D", 0);
+
+            // resuming process
+            resume(cpuProc1);
+            resume(cpuProc2);
+            resume(cpuProc3);
+            resume(cpuProc4);
+
+            break;
+        /**
+         *  Benchmark B:
+         */
+        case 2:
+
+            printf("Executing Benchmark-B : 4 IO process\n\n");
+
+            // Creating
+            ioPoc1 = create(procio, 1024, 1, "IO-Proc-A", 0);
+            ioPoc2 = create(procio, 1024, 1, "IO-Proc-B", 0);
+            ioPoc3 = create(procio, 1024, 1, "IO-Proc-C", 0);
+            ioPoc4 = create(procio, 1024, 1, "IO-Proc-D", 0);
+
+
+            resume(ioPoc1);
+            resume(ioPoc2);
+            resume(ioPoc3);
+            resume(ioPoc4);
+
+            break;
+        /**
+         *  Benchmark C:
+         */
+        case 3:
+
+            printf("Executing Benchmark-C : 4 CPU process and 4 IO Process\n\n");
+
+            cpuProc1 = create(cpuproc, 1024, 1, "CPU-Proc-A", 0);
+            cpuProc2 = create(cpuproc, 1024, 1, "CPU-Proc-B", 0);
+            cpuProc3 = create(cpuproc, 1024, 1, "CPU-Proc-C", 0);
+            cpuProc4 = create(cpuproc, 1024, 1, "CPU-Proc-D", 0);
+
+            ioPoc1 = create(procio, 1024, 1, "IO-Proc-A", 0);
+            ioPoc2 = create(procio, 1024, 1, "IO-Proc-B", 0);
+            ioPoc3 = create(procio, 1024, 1, "IO-Proc-C", 0);
+            ioPoc4 = create(procio, 1024, 1, "IO-Proc-D", 0);
+
+            resume(cpuProc1);
+            resume(cpuProc2);
+            resume(cpuProc3);
+            resume(cpuProc4);
+
+            resume(ioPoc1);
+            resume(ioPoc2);
+            resume(ioPoc3);
+            resume(ioPoc4);
+
+            break;
+        /**
+         *  Benchmark D:
+         */
+        case 4:
+
+            printf("Executing Benchmark-D : 3 CPU process and 1 Parasite\n\n");
+
+            tid_typ cpuProc1 = create(cpuproc, 1024, 1, "CPU-Proc-A", 0);
+            tid_typ cpuProc2 = create(cpuproc, 1024, 1, "CPU-Proc-B", 0);
+            tid_typ cpuProc3 = create(cpuproc, 1024, 1, "CPU-Proc-C", 0);
+            tid_typ parasite1 = create(parasite, 1024, 1, "Parasite-Proc", 0);
+
+            resume(cpuProc1);
+            resume(cpuProc2);
+            resume(cpuProc3);
+            resume(parasite1);
+
+            break;
+        /**
+         * Invalid benchmark option selected
+         */
+        default:
+            kprintf("Invalid benchmark test \n Exiting..\n");
     }
-#endif
+
+
+
+
+    recvclr();
+
+    //our_shell_id =  create(shell, 4096, 50, "SHELL", 1, CONSOLE);
+    //chprio(our_shell_id, 0);
+    //resume(our_shell_id);
+
+
+
+
+//    while (1) {
+//        receive();
+//        sleep(200);
+//        fprintf(stdout, "\n\nMain Thread re-creating shell\n\n");
+//        resume(create(shell, 4096, 20, "SHELL", 1, CONSOLE));
+//    }
 
     return 0;
 }
-
-/* Start of kernel in memory (provided by linker)  */
-extern void _start(void);
 
 static void print_os_info(void)
 {

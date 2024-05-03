@@ -13,6 +13,7 @@
 #include <debug.h>
 #include <stddef.h>
 #include <memory.h>
+#include <stdint.h>
 #endif /* __ASSEMBLER__ */
 
 /* unusual value marks the top of the thread stack                      */
@@ -65,6 +66,14 @@
 #define THRENTSIZE 148
 #define STKDIVOFFSET 104
 
+// Defining the three time slice macros
+#define QUANTUMIO       5
+#define QUANTUMCPU      50
+#define QUANTUMIDLE     100
+
+// Stop condition for clkcountermsec.
+#define STOPCOND        10000
+
 #ifndef __ASSEMBLER__
 
 /**
@@ -73,7 +82,14 @@
 struct thrent
 {
     uchar state;                /**< thread state: THRCURR, etc.        */
-    int prio;                   /**< thread priority                    */
+    int prio;                   /**< thread priority
+                                * we will repurpose this field to
+                                * classify whether this thread is
+                                * CPU-bound or IO-bound.
+                                * prio=0 indicates null thread.
+                                * IF CPU-bound, prio=1;
+                                * if IO-bound, prio=2;
+                                * In case (3), prio=prio                */
     void *stkptr;               /**< saved stack pointer                */
     void *stkbase;              /**< base of run time stack             */
     ulong stklen;               /**< stack length in bytes              */
@@ -85,6 +101,11 @@ struct thrent
     bool hasmsg;                /**< nonzero iff msg is valid           */
     struct memblock memlist;    /**< free memory list of thread         */
     int fdesc[NDESC];           /**< device descriptors for thread      */
+    uint thrtotcpu;           /**< Variable to keep track of
+                                      running time                      */
+    uint32_t thrtotresp;
+    uint32_t thrtotready;
+    uint32_t thrreadystart;
 };
 
 extern struct thrent thrtab[];
@@ -109,6 +130,7 @@ int resched(void);
 syscall sleep(uint);
 syscall unsleep(tid_typ);
 syscall yield(void);
+
 
 /**
  * @ingroup threads

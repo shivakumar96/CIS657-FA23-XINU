@@ -7,6 +7,8 @@
 #include <thread.h>
 #include <queue.h>
 
+extern volatile uint32_t clkcountermsec;
+
 /**
  * @ingroup threads
  *
@@ -25,7 +27,17 @@ int ready(tid_typ tid, bool resch)
     }
 
     thrptr = &thrtab[tid];
+
+    //increment the thrtotready ony if the thread is created for the first time (THRSUSP) state or
+    //it is moved from THCURR to THRREADY. This will be handled by resched function, but addding the condition for afer side.
+    if(thrptr->state == THRSUSP || thrptr->state == THRCURR || thrptr->state == THRSLEEP){
+        // Increment the total times the thread transitioned to the ready queue by 1.
+        thrptr->thrtotready = thrptr->thrtotready + 1;
+        thrptr->thrreadystart = clkcountermsec;
+    }
     thrptr->state = THRREADY;
+
+
 
     insert(tid, readylist, thrptr->prio);
 

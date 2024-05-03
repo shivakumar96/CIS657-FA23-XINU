@@ -36,6 +36,8 @@ struct syscall_info
 #define SYSCALL_MBOXFREE   14 /**< Free a mailbox                   */
 #define SYSCALL_MBOXRECV   15 /**< Receive message from mailbox     */
 #define SYSCALL_MBOXSEND   16 /**< Send message to mailbox          */
+#define SYSCALL_TOTCPU     17 /**< Get total CPU usage time         */
+#define SYSCALL_AVGRESPONSE 18
 
 extern const struct syscall_info syscall_table[];
 extern int nsyscalls;
@@ -58,5 +60,7 @@ syscall user_mboxalloc(uint nmsgs);
 syscall user_mboxfree(mailbox mbox_id);
 syscall user_mboxrecv(mailbox mbox_id);
 syscall user_mboxsend(mailbox mbox_id, int msg);
+syscall user_totcpu(tid_typ thread_id);
+syscall user_avgresponse(tid_typ thread_id);
 
 #endif                          /* __SYSCALL_H__ */

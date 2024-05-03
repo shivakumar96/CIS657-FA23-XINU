@@ -28,6 +28,7 @@
 #include <syscall.h>
 #include <safemem.h>
 #include <platform.h>
+#include <stdint.h>
 
 #ifdef WITH_USB
 #  include <usb_subsystem.h>
@@ -48,6 +49,10 @@ struct bfpentry bfptab[NPOOL];  /* List of memory buffer pools    */
 /* Active system status */
 int thrcount;                   /* Number of live user threads         */
 tid_typ thrcurrent;             /* Id of currently running thread      */
+
+/* Global variable that estimates the time (in msec) that the current thread has spent in state THRCURR after
+being context-switched in. */
+uint32_t cputime = 0;
 
 /* Params set by startup.S */
 void *memheap;                  /* Bottom of heap (top of O/S stack)   */

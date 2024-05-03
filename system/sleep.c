@@ -11,6 +11,8 @@
 #include <queue.h>
 #include <clock.h>
 
+extern volatile uint32_t clkcountermsec;
+
 /**
  * @ingroup threads
  *
@@ -27,6 +29,12 @@
 syscall sleep(uint ms)
 {
 #if RTCLOCK
+
+    // First, check if the value is negative.
+    if (ms < 0) {
+        return SYSERR;
+    }
+
     irqmask im;
     int ticks = 0;
 
@@ -42,6 +50,16 @@ syscall sleep(uint ms)
         }
         thrtab[thrcurrent].state = THRSLEEP;
     }
+
+    struct thrent *thrptr = &thrtab[thrcurrent];
+
+    if (thrptr->prio == 1) {
+        kprintf("Thread %s changed priority \n",thrptr->name);
+        chprio(thrcurrent, 2);
+        //thrptr->prio = 2;
+    }
+    thrptr->thrtotresp = thrptr->thrtotresp + (clkcountermsec - thrptr->thrreadystart);
+    //kprintf("sleep is calle by %d \n",thrptr->name);
 
     resched();
     restore(im);

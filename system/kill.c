@@ -10,6 +10,7 @@
 #include <safemem.h>
 
 extern void xdone(void);
+extern tid_typ our_shell_id;
 
 /**
  * @ingroup threads
@@ -53,6 +54,9 @@ syscall kill(tid_typ tid)
         break;
     case THRCURR:
         thrptr->state = THRFREE;        /* suicide */
+        if(tid > 3)
+            chprio(our_shell_id,1);
+        kprintf("Process name killed is %s \n",thrptr->name);
         resched();
 
     case THRWAIT:
